@@ -103,7 +103,7 @@ And is designed to run on the [Universal Rack Controller](https://github.com/Sup
 
 ## Credits
  * Jonathan Oxer <jon@oxer.com.au>
- * James Kennewell <bedrockmediadesigns@gmail.com>
+ * James Kennewell <James@bmdesigns.com.au>
  * Ben Jones <https://github.com/sumnerboy12>
 
 
