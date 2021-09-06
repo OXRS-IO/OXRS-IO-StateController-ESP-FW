@@ -7,22 +7,21 @@
     ESP32
 
   External dependencies. Install using the Arduino library manager:
-    "Adafruit_MCP23X17"
+    "Adafruit_MCP23X17" (requires recent "Adafruit_BusIO" library)
     "PubSubClient" by Nick O'Leary
-    "OXRS-SHA-MQTT-ESP32-LIB" by SuperHouse Automation Pty
+    "OXRS-IO-MQTT-ESP32-LIB" by OXRS Core Team
     "OXRS-SHA-IOHandler-ESP32-LIB" by SuperHouse Automation Pty
 
-  Based on the multi-channel relay driver hardware found here:
+  Compatible with the multi-channel relay driver hardware found here:
     https://www.superhouse.tv/product/8-channel-relay-driver-shield/
     https://bmdesigns.com.au/shop/relay16-16-channel-relay-driver/
     https://bmdesigns.com.au/shop/relay128-128-channel-relay-driver/
+
+  GitHub repository:
+    https://github.com/SuperHouse/OXRS-SHA-StateController-ESP32-FW
     
   Bugs/Features:
-   - See GitHub issues list.
-
-  Written by Ben Jones on behalf of www.superhouse.tv
-    https://github.com/sumnerboy12/
-    https://github.com/superhouse/
+    See GitHub issues list
 
   Copyright 2019-2021 SuperHouse Automation Pty Ltd
 */
