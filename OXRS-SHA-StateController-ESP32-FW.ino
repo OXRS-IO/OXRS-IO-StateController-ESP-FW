@@ -30,6 +30,9 @@
 #define FW_NAME    "OXRS-SHA-StateController-ESP32-FW"
 #define FW_CODE    "osc"
 #define FW_VERSION "1.0.0"
+#define FW_SHORT_NAME "State Controller"
+#define FW_MAKER_CODE "SHA"
+#define FW_PLATFORM   "ESP32"
 
 /*--------------------------- Configuration ------------------------------*/
 // Should be no user configuration in this file, everything should be in;
@@ -42,6 +45,7 @@
 #include <OXRS_MQTT.h>                // For MQTT
 #include <Adafruit_MCP23X17.h>        // For MCP23017 I/O buffers
 #include <OXRS_Output.h>              // For output handling
+#include <OXRS_LCD.h>                 // For LCD runtime displays
 
 #ifdef ARDUINO_ARCH_ESP32
 #include <WiFi.h>                     // Also required for Ethernet to get MAC
@@ -50,6 +54,10 @@
 /*--------------------------- Constants ----------------------------------*/
 // Each MCP23017 has 16 I/O pins
 #define MCP_PIN_COUNT   16
+
+/*--------------------------- Global Variables ---------------------------*/
+// Each bit corresponds to an MCP found on the IC2 bus
+uint8_t   g_mcps_found = 0;
 
 /*--------------------------- Function Signatures ------------------------*/
 void mqttCallback(char * topic, uint8_t * payload, unsigned int length);
@@ -64,9 +72,12 @@ OXRS_Output oxrsOutput[MCP_COUNT];
 // Ethernet client
 EthernetClient ethernet;
 
+// screen functions
+OXRS_LCD screen(Ethernet);
+
 // MQTT client
 PubSubClient mqttClient(MQTT_BROKER, MQTT_PORT, mqttCallback, ethernet);
-OXRS_MQTT mqtt(mqttClient);
+OXRS_MQTT mqtt(mqttClient, screen);
 
 /*--------------------------- Program ------------------------------------*/
 /**
@@ -90,8 +101,16 @@ void setup()
   // Scan the I2C bus and set up I/O buffers
   scanI2CBus();
 
+  // initialize screen
+  screen.begin();
+
   // Speed up I2C clock for faster scan rate (after bus scan)
   Wire.setClock(I2C_CLOCK_SPEED);  
+
+  // Display the header and initialise the port display
+  screen.draw_header(FW_MAKER_CODE, FW_SHORT_NAME, FW_VERSION, FW_PLATFORM);
+  screen.draw_ports_output(g_mcps_found);
+  screen.show_temp(random(0, 10000) / 100.0);               // for test now. value will be replaced by measured value
 
    // Set up ethernet and obtain an IP address
   byte mac[6];
@@ -100,6 +119,7 @@ void setup()
   // Set up connection to MQTT broker
   initialiseMqtt(mac); 
 }
+
 
 /**
   Main processing loop
@@ -116,7 +136,11 @@ void loop()
   for (uint8_t i = 0; i < MCP_COUNT; i++)
   {
     oxrsOutput[i].process();
+    screen.process (i, mcp23017[i].readGPIOAB());    
   }
+  
+  // maintain screen
+  screen.loop();
 }
 
 /**
@@ -292,6 +316,11 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
   char eventType[7];
   getEventType(eventType, type, state);
 
+  // show event on screen bottom line
+  char event[32];
+  sprintf_P(event, PSTR("IDX:%2d %s %s   "), index, outputType, eventType);
+  screen.show_event (event);
+
   // Build JSON payload for this event
   StaticJsonDocument<64> json;
   json["index"] = index;
@@ -374,6 +403,8 @@ void scanI2CBus()
     Wire.beginTransmission(MCP_I2C_ADDRESS[mcp]);
     if (Wire.endTransmission() == 0)
     {
+      bitWrite(g_mcps_found, mcp, 1);
+
       // If an MCP23017 was found then initialise and configure the outputs
       mcp23017[mcp].begin_I2C(MCP_I2C_ADDRESS[mcp]);
       for (uint8_t pin = 0; pin < MCP_PIN_COUNT; pin++)
