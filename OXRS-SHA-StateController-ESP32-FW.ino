@@ -29,7 +29,7 @@
 /*--------------------------- Version ------------------------------------*/
 #define FW_NAME    "OXRS-SHA-StateController-ESP32-FW"
 #define FW_CODE    "osc"
-#define FW_VERSION "1.0.0"
+#define FW_VERSION "1.1.0"
 #define FW_SHORT_NAME "State Controller"
 #define FW_MAKER_CODE "SHA"
 #define FW_PLATFORM   "ESP32"
@@ -58,6 +58,9 @@
 /*--------------------------- Global Variables ---------------------------*/
 // Each bit corresponds to an MCP found on the IC2 bus
 uint8_t   g_mcps_found = 0;
+
+// temperature update interval timer
+uint32_t  g_last_temp_update = -TEMP_UPDATE_INTERVAL;
 
 /*--------------------------- Function Signatures ------------------------*/
 void mqttCallback(char * topic, uint8_t * payload, unsigned int length);
@@ -109,8 +112,7 @@ void setup()
 
   // Display the header and initialise the port display
   screen.draw_header(FW_MAKER_CODE, FW_SHORT_NAME, FW_VERSION, FW_PLATFORM);
-  screen.draw_ports_output(g_mcps_found);
-  screen.show_temp(random(0, 10000) / 100.0);               // for test now. value will be replaced by measured value
+  screen.draw_ports(PORT_LAYOUT_OUTPUT_128, g_mcps_found);
 
    // Set up ethernet and obtain an IP address
   byte mac[6];
@@ -135,12 +137,40 @@ void loop()
   // Check each set of outputs for delay/timer activations
   for (uint8_t i = 0; i < MCP_COUNT; i++)
   {
+    // process existing MCPs only
+    if (bitRead(g_mcps_found, i) == 0) continue;
+    
     oxrsOutput[i].process();
     screen.process (i, mcp23017[i].readGPIOAB());    
   }
   
+  // check for temperature udate
+  update_temperature ();
+    
   // maintain screen
   screen.loop();
+}
+
+/**
+  check if temperature udate required
+  read temperature from on board sensor
+  update screen
+  publish mqtt tele/....  {"temp": xx.xx}
+*/
+void update_temperature ()
+{
+  if ((millis() - g_last_temp_update) > TEMP_UPDATE_INTERVAL)
+  {
+    // read temp from sensor
+    // TODO
+    // Display temperature on screen
+    float temperature;
+    temperature = random(0, 10000) / 100.0;               // for test now. value will be replaced by measured value
+    screen.show_temp(temperature); 
+    // publish to mqtt
+    publishTemperature(temperature);
+    g_last_temp_update = millis();
+  }
 }
 
 /**
@@ -318,7 +348,7 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
 
   // show event on screen bottom line
   char event[32];
-  sprintf_P(event, PSTR("IDX:%2d %s %s   "), index, outputType, eventType);
+  sprintf_P(event, PSTR("idx:%2d %s %s   "), index, outputType, eventType);
   screen.show_event (event);
 
   // Build JSON payload for this event
@@ -332,6 +362,18 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
   {
     Serial.println("FAILOVER!!!");
   }
+}
+
+void publishTemperature(float temperature)
+{
+  char sTemperature [8];
+  sprintf(sTemperature, "%2.2f", temperature);
+  // Build JSON payload for this event
+  StaticJsonDocument<64> json;
+  json["temperature"] = sTemperature;
+  
+  // Publish to MQTT
+  mqtt.publishTelemetry(json.as<JsonObject>());
 }
 
 void getOutputType(char outputType[], uint8_t type)
