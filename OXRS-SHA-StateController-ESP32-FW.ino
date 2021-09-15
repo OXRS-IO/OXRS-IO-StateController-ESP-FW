@@ -27,9 +27,9 @@
 */
 
 /*--------------------------- Version ------------------------------------*/
-#define FW_NAME    "OXRS-SHA-StateController-ESP32-FW"
-#define FW_CODE    "osc"
-#define FW_VERSION "1.1.0"
+#define FW_NAME       "OXRS-SHA-StateController-ESP32-FW"
+#define FW_CODE       "osc"
+#define FW_VERSION    "1.1.0"
 #define FW_SHORT_NAME "State Controller"
 #define FW_MAKER_CODE "SHA"
 #define FW_PLATFORM   "ESP32"
@@ -75,7 +75,7 @@ OXRS_Output oxrsOutput[MCP_COUNT];
 // Ethernet client
 EthernetClient ethernet;
 
-// screen functions
+// LCD screen
 OXRS_LCD screen(Ethernet);
 
 // MQTT client
@@ -104,7 +104,7 @@ void setup()
   // Scan the I2C bus and set up I/O buffers
   scanI2CBus();
 
-  // initialize screen
+  // Set up the screen
   screen.begin();
 
   // Speed up I2C clock for faster scan rate (after bus scan)
@@ -134,17 +134,23 @@ void loop()
   // Check our MQTT broker connection is still ok
   mqtt.loop();
 
-  // Check each set of outputs for delay/timer activations
-  for (uint8_t i = 0; i < MCP_COUNT; i++)
+  // Iterate through each of the MCP23017s
+  for (uint8_t mcp = 0; mcp < MCP_COUNT; mcp++)
   {
-    // process existing MCPs only
-    if (bitRead(g_mcps_found, i) == 0) continue;
+    if (bitRead(g_mcps_found, mcp) == 0) 
+      continue;
     
-    oxrsOutput[i].process();
-    screen.process (i, mcp23017[i].readGPIOAB());    
+    // Check for any output events
+    oxrsOutput[mcp].process();
+
+    // Read the values for all 16 outputs on this MCP (after events)
+    uint16_t io_value = mcp23017[mcp].readGPIOAB();
+
+    // Show port animations
+    screen.process(mcp, io_value);
   }
   
-  // Check for temperature udate
+  // Check for temperature update
   updateTemperature();
     
   // Maintain screen
@@ -159,10 +165,10 @@ void updateTemperature()
     float temperature;
     temperature = random(0, 10000) / 100.0;
 
-    // Display temperature on screen
+    // Display temp on screen
     screen.show_temp(temperature); 
 
-    // Publish to mqtt
+    // Publish temp to mqtt
     publishTemperature(temperature);
     
     g_last_temp_update = millis();
@@ -350,9 +356,9 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
   getEventType(eventType, type, state);
 
   // Show event on screen
-  char event[32];
-  sprintf_P(event, PSTR("IDX:%2d %s %s   "), index, outputType, eventType);
-  screen.show_event(event);
+  char display[32];
+  sprintf_P(display, PSTR("IDX:%2d %s %s   "), index, outputType, eventType);
+  screen.show_event(display);
 
   // Build JSON payload for this event
   StaticJsonDocument<64> json;
@@ -368,13 +374,14 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
   }
   else
   {
+    // TODO: add any failover handling in here!
     Serial.println("FAILOVER!!!");    
   }
 }
 
 void publishTemperature(float temperature)
 {
-  char payload [8];
+  char payload[8];
   sprintf(payload, "%2.2f", temperature);
 
   // Build JSON payload for this event
