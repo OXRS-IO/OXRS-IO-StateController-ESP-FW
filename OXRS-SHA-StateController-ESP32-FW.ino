@@ -57,10 +57,10 @@
 
 /*--------------------------- Global Variables ---------------------------*/
 // Each bit corresponds to an MCP found on the IC2 bus
-uint8_t   g_mcps_found = 0;
+uint8_t g_mcps_found = 0;
 
 // temperature update interval timer
-uint32_t  g_last_temp_update = -TEMP_UPDATE_INTERVAL;
+uint32_t g_last_temp_update = -TEMP_UPDATE_INTERVAL;
 
 /*--------------------------- Function Signatures ------------------------*/
 void mqttCallback(char * topic, uint8_t * payload, unsigned int length);
@@ -122,7 +122,6 @@ void setup()
   initialiseMqtt(mac); 
 }
 
-
 /**
   Main processing loop
 */
@@ -143,7 +142,7 @@ void loop()
     // Check for any output events
     oxrsOutput[mcp].process();
 
-    // Read the values for all 16 outputs on this MCP (after events)
+    // Read the values for all 16 pins on this MCP
     uint16_t io_value = mcp23017[mcp].readGPIOAB();
 
     // Show port animations
@@ -193,9 +192,9 @@ void initialiseMqtt(byte * mac)
   mqtt.setTopicSuffix(MQTT_TOPIC_SUFFIX);
 #endif
 
-  // Display the MQTT status topic on screen
+  // Display the MQTT topic on screen
   char topic[64];
-  screen.show_MQTT_topic(mqtt.getStatusTopic(topic));
+  screen.show_MQTT_topic(mqtt.getWildcardTopic(topic));
   
   // Listen for config and command messages
   mqtt.onConfig(mqttConfig);
@@ -357,7 +356,7 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
 
   // Show event on screen
   char display[32];
-  sprintf_P(display, PSTR("IDX:%2d %s %s   "), index, outputType, eventType);
+  sprintf_P(display, PSTR("idx:%2d %s %s   "), index, outputType, eventType);
   screen.show_event(display);
 
   // Build JSON payload for this event
