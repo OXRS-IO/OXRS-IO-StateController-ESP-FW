@@ -28,12 +28,8 @@
 /*--------------------------- Version ------------------------------------*/
 #define FW_NAME       "OXRS-SHA-StateController-ESP32-FW"
 #define FW_SHORT_NAME "State Controller"
-#define FW_MAKER_CODE "SHA"
-#define FW_VERSION    "1.2.0"
-
-/*--------------------------- Configuration ------------------------------*/
-// Should be no user configuration in this file, everything should be in;
-#include "config.h"
+#define FW_MAKER      "SuperHouse Automation"
+#define FW_VERSION    "2.0.0"
 
 /*--------------------------- Libraries ----------------------------------*/
 #include <Adafruit_MCP23X17.h>        // For MCP23017 I/O buffers
@@ -57,7 +53,7 @@ uint8_t g_mcps_found = 0;
 
 /*--------------------------- Instantiate Global Objects -----------------*/
 // Rack32 handler
-OXRS_Rack32 rack32(FW_NAME, FW_SHORT_NAME, FW_MAKER_CODE, FW_VERSION);
+OXRS_Rack32 rack32(FW_NAME, FW_SHORT_NAME, FW_MAKER, FW_VERSION);
 
 // I/O buffers
 Adafruit_MCP23X17 mcp23017[MCP_COUNT];
@@ -71,12 +67,6 @@ OXRS_Output oxrsOutput[MCP_COUNT];
 */
 void setup()
 {
-  // Set up Rack32 config
-  rack32.setMqttBroker(MQTT_BROKER, MQTT_PORT);
-  rack32.setMqttAuth(MQTT_USERNAME, MQTT_PASSWORD);
-  rack32.setMqttTopicPrefix(MQTT_TOPIC_PREFIX);
-  rack32.setMqttTopicSuffix(MQTT_TOPIC_SUFFIX);
-  
   // Start Rack32 hardware
   rack32.begin(jsonConfig, jsonCommand);
 
@@ -249,9 +239,16 @@ uint8_t getIndex(JsonObject json)
   }
   
   uint8_t index = json["index"].as<uint8_t>();
+
+  // Count how many MCPs were found
+  uint8_t mcpCount = 0;
+  for (uint8_t mcp = 0; mcp < MCP_COUNT; mcp++)
+  {
+    if (bitRead(g_mcps_found, mcp) != 0) { mcpCount++; }
+  }
   
   // Check the index is valid for this device
-  if (index <= 0 || index > (MCP_COUNT * MCP_PIN_COUNT))
+  if (index <= 0 || index > (mcpCount * MCP_PIN_COUNT))
   {
     Serial.println(F("[erro] invalid index"));
     return 0;
