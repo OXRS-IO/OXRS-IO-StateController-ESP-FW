@@ -1,7 +1,7 @@
 /**
   ESP32 state controller firmware for the Open eXtensible Rack System
   
-  See https://github.com/SuperHouse/OXRS-SHA-StateController-ESP32-FW for documentation.
+  See https://oxrs.io/docs/firmware/state-controller-esp32.html for documentation.
 
   Compile options:
     ESP32
