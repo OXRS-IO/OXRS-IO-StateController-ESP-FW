@@ -77,7 +77,7 @@ void setup()
   rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_128);
 
   // Speed up I2C clock for faster scan rate (after bus scan)
-  Serial.print(F("[i2c ] setting I2C clock speed to "));
+  Serial.print(F("[osc ] setting I2C clock speed to "));
   Serial.println(I2C_CLOCK_SPEED);
   Wire.setClock(I2C_CLOCK_SPEED);
 }
@@ -135,7 +135,7 @@ void jsonConfig(JsonObject json)
     }
     else 
     {
-      Serial.println(F("[erro] invalid output type"));
+      Serial.println(F("[osc ] invalid output type"));
     }
   }
   
@@ -171,7 +171,7 @@ void jsonConfig(JsonObject json)
       }
       else
       {
-        Serial.println(F("[erro] lock must be with pin on same mcp"));
+        Serial.println(F("[osc ] lock must be with pin on same mcp"));
       }
     }
   }
@@ -198,7 +198,7 @@ void jsonCommand(JsonObject json)
         (strcmp(json["type"], "motor") == 0 && type != MOTOR) ||
         (strcmp(json["type"], "timer") == 0 && type != TIMER))
     {
-      Serial.println(F("[erro] command type doesn't match configured type"));
+      Serial.println(F("[osc ] command type doesn't match configured type"));
       return;
     }
   }
@@ -224,7 +224,7 @@ void jsonCommand(JsonObject json)
       }
       else 
       {
-        Serial.println(F("[erro] invalid command"));
+        Serial.println(F("[osc ] invalid command"));
       }
     }
   }
@@ -234,7 +234,7 @@ uint8_t getIndex(JsonObject json)
 {
   if (!json.containsKey("index"))
   {
-    Serial.println(F("[erro] missing index"));
+    Serial.println(F("[osc ] missing index"));
     return 0;
   }
   
@@ -250,7 +250,7 @@ uint8_t getIndex(JsonObject json)
   // Check the index is valid for this device
   if (index <= 0 || index > (mcpCount * MCP_PIN_COUNT))
   {
-    Serial.println(F("[erro] invalid index"));
+    Serial.println(F("[osc ] invalid index"));
     return 0;
   }
 
@@ -332,7 +332,7 @@ void outputEvent(uint8_t id, uint8_t output, uint8_t type, uint8_t state)
  */
 void scanI2CBus()
 {
-  Serial.println(F("[i2c ] scanning for I/O buffers..."));
+  Serial.println(F("[osc ] scanning for I/O buffers..."));
 
   for (uint8_t mcp = 0; mcp < MCP_COUNT; mcp++)
   {
