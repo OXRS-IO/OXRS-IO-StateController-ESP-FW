@@ -160,12 +160,12 @@ void jsonConfig(JsonVariant json)
   {
     for (JsonVariant output : json["outputs"].as<JsonArray>())
     {
-      jsonOutput(output);
+      jsonOutputConfig(output);
     }
   }
 }
 
-void jsonOutput(JsonVariant json)
+void jsonOutputConfig(JsonVariant json)
 {
   uint8_t index = getIndex(json);
   if (index == 0) return;
