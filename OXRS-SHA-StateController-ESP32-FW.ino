@@ -176,13 +176,13 @@ void jsonOutputConfig(JsonVariant json)
 
   if (json.containsKey("type"))
   {
-    if (json["type"].isNull() || strcmp(json["type"], "relay") == 0)
-    {
-      oxrsOutput[mcp].setType(pin, RELAY);
-    }
-    else if (strcmp(json["type"], "motor") == 0)
+    if (strcmp(json["type"], "motor") == 0)
     {
       oxrsOutput[mcp].setType(pin, MOTOR);
+    }
+    else if (strcmp(json["type"], "relay") == 0)
+    {
+      oxrsOutput[mcp].setType(pin, RELAY);
     }
     else if (strcmp(json["type"], "timer") == 0)
     {
@@ -196,13 +196,13 @@ void jsonOutputConfig(JsonVariant json)
   
   if (json.containsKey("timerSeconds"))
   {
-    if (json["type"].isNull())
+    if (json["timerSeconds"].isNull())
     {
       oxrsOutput[mcp].setTimer(pin, DEFAULT_TIMER_SECS);
     }
     else
     {
-      oxrsOutput[mcp].setTimer(pin, json["timerSeconds"].as<int>());      
+      oxrsOutput[mcp].setTimer(pin, json["timerSeconds"].as<int>());
     }
   }
   
