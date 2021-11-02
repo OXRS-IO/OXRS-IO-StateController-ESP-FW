@@ -415,8 +415,8 @@ void scanI2CBus()
         mcp23017[mcp].digitalWrite(pin, RELAY_OFF);
       }
 
-      // Listen for output events
-      oxrsOutput[mcp].onEvent(outputEvent);
+      // Initialise output handlers
+      oxrsOutput[mcp].begin(outputEvent);
       
       Serial.println(F("MCP23017"));
     }
