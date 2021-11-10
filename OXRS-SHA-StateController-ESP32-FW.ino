@@ -29,7 +29,7 @@
 #define FW_NAME       "OXRS-SHA-StateController-ESP32-FW"
 #define FW_SHORT_NAME "State Controller"
 #define FW_MAKER      "SuperHouse Automation"
-#define FW_VERSION    "3.1.0"
+#define FW_VERSION    "3.1.1"
 
 /*--------------------------- Libraries ----------------------------------*/
 #include <Adafruit_MCP23X17.h>        // For MCP23017 I/O buffers
@@ -74,11 +74,11 @@ void setup()
   // Startup logging to serial
   Serial.begin(SERIAL_BAUD_RATE);
   Serial.println();
-  Serial.println(F("==============================="));
-  Serial.println(FW_NAME);
-  Serial.print  (F("             v"));
-  Serial.println(FW_VERSION);
-  Serial.println(F("==============================="));
+  Serial.println(F("========================================"));
+  Serial.print  (F("FIRMWARE: ")); Serial.println(FW_NAME);
+  Serial.print  (F("MAKER:    ")); Serial.println(FW_MAKER);
+  Serial.print  (F("VERSION:  ")); Serial.println(FW_VERSION);
+  Serial.println(F("========================================"));
 
   // Start the I2C bus
   Wire.begin();
@@ -96,8 +96,6 @@ void setup()
   setConfigSchema();
   
   // Speed up I2C clock for faster scan rate (after bus scan)
-  Serial.print(F("[osc ] setting I2C clock speed to "));
-  Serial.println(I2C_CLOCK_SPEED);
   Wire.setClock(I2C_CLOCK_SPEED);
 }
 
@@ -205,7 +203,7 @@ void jsonOutputConfig(JsonVariant json)
     }
     else 
     {
-      Serial.println(F("[osc ] invalid output type"));
+      Serial.println(F("[scon] invalid output type"));
     }
   }
   
@@ -241,7 +239,7 @@ void jsonOutputConfig(JsonVariant json)
       }
       else
       {
-        Serial.println(F("[osc ] lock must be with pin on same mcp"));
+        Serial.println(F("[scon] lock must be with pin on same mcp"));
       }
     }
   }
@@ -268,7 +266,7 @@ void jsonCommand(JsonVariant json)
         (strcmp(json["type"], "motor") == 0 && type != MOTOR) ||
         (strcmp(json["type"], "timer") == 0 && type != TIMER))
     {
-      Serial.println(F("[osc ] command type doesn't match configured type"));
+      Serial.println(F("[scon] command type doesn't match configured type"));
       return;
     }
   }
@@ -294,7 +292,7 @@ void jsonCommand(JsonVariant json)
       }
       else 
       {
-        Serial.println(F("[osc ] invalid command"));
+        Serial.println(F("[scon] invalid command"));
       }
     }
   }
@@ -317,7 +315,7 @@ uint8_t getIndex(JsonVariant json)
 {
   if (!json.containsKey("index"))
   {
-    Serial.println(F("[osc ] missing index"));
+    Serial.println(F("[scon] missing index"));
     return 0;
   }
   
@@ -326,7 +324,7 @@ uint8_t getIndex(JsonVariant json)
   // Check the index is valid for this device
   if (index <= 0 || index > getMaxIndex())
   {
-    Serial.println(F("[osc ] invalid index"));
+    Serial.println(F("[scon] invalid index"));
     return 0;
   }
 
@@ -347,7 +345,7 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
   
   if (!rack32.publishStatus(json.as<JsonVariant>()))
   {
-    Serial.print(F("[osc ] [failover] "));
+    Serial.print(F("[scon] [failover] "));
     serializeJson(json, Serial);
     Serial.println();
 
@@ -411,7 +409,7 @@ void outputEvent(uint8_t id, uint8_t output, uint8_t type, uint8_t state)
  */
 void scanI2CBus()
 {
-  Serial.println(F("[osc ] scanning for I/O buffers..."));
+  Serial.println(F("[scon] scanning for I/O buffers..."));
 
   for (uint8_t mcp = 0; mcp < MCP_COUNT; mcp++)
   {
