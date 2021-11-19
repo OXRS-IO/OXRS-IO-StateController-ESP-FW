@@ -29,7 +29,7 @@
 #define FW_NAME       "OXRS-SHA-StateController-ESP32-FW"
 #define FW_SHORT_NAME "State Controller"
 #define FW_MAKER      "SuperHouse Automation"
-#define FW_VERSION    "3.1.1"
+#define FW_VERSION    "3.2.0"
 
 /*--------------------------- Libraries ----------------------------------*/
 #include <Adafruit_MCP23X17.h>        // For MCP23017 I/O buffers
@@ -92,8 +92,9 @@ void setup()
   // Set up port display
   rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
 
-  // Set up config schema (for self-discovery and adoption)
+  // Set up config/command schemas (for self-discovery and adoption)
   setConfigSchema();
+  setCommandSchema();
   
   // Speed up I2C clock for faster scan rate (after bus scan)
   Wire.setClock(I2C_CLOCK_SPEED);
@@ -248,7 +249,57 @@ void jsonOutputConfig(JsonVariant json)
 /**
   Command handler
  */
+void setCommandSchema()
+{
+  // Define our command schema
+  StaticJsonDocument<1024> json;
+
+  JsonObject outputs = json.createNestedObject("outputs");
+  outputs["type"] = "array";
+  
+  JsonObject items = outputs.createNestedObject("items");
+  items["type"] = "object";
+
+  JsonObject properties = items.createNestedObject("properties");
+
+  JsonObject index = properties.createNestedObject("index");
+  index["type"] = "integer";
+  index["minimum"] = 1;
+  index["maximum"] = getMaxIndex();
+
+  JsonObject type = properties.createNestedObject("type");
+  JsonArray typeEnum = type.createNestedArray("enum");
+  typeEnum.add("relay");
+  typeEnum.add("motor");
+  typeEnum.add("timer");
+
+  JsonObject command = properties.createNestedObject("command");
+  command["type"] = "string";
+  JsonArray commandEnum = command.createNestedArray("enum");
+  commandEnum.add("query");
+  commandEnum.add("on");
+  commandEnum.add("off");
+
+  JsonArray required = items.createNestedArray("required");
+  required.add("index");
+  required.add("command");
+
+  // Pass our config schema down to the Rack32 library
+  rack32.setCommandSchema(json.as<JsonVariant>());
+}
+
 void jsonCommand(JsonVariant json)
+{
+  if (json.containsKey("outputs"))
+  {
+    for (JsonVariant output : json["outputs"].as<JsonArray>())
+    {
+      jsonOutputConfig(output);
+    }
+  }
+}
+
+void jsonOutputCommand(JsonVariant json)
 {
   uint8_t index = getIndex(json);
   if (index == 0) return;
