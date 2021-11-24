@@ -294,7 +294,7 @@ void jsonCommand(JsonVariant json)
   {
     for (JsonVariant output : json["outputs"].as<JsonArray>())
     {
-      jsonOutputConfig(output);
+      jsonOutputCommand(output);
     }
   }
 }
