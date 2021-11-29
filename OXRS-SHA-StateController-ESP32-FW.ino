@@ -143,7 +143,6 @@ void setConfigSchema()
 
   JsonObject index = properties.createNestedObject("index");
   index["type"] = "integer";
-  index["required"] = true;
   index["minimum"] = 1;
   index["maximum"] = getMaxIndex();
 
@@ -161,6 +160,9 @@ void setConfigSchema()
   interlockIndex["type"] = "integer";
   interlockIndex["minimum"] = 1;
   interlockIndex["maximum"] = getMaxIndex();
+
+  JsonArray required = items.createNestedArray("required");
+  required.add("index");
 
   // Pass our config schema down to the Rack32 library
   rack32.setConfigSchema(json.as<JsonVariant>());
@@ -262,7 +264,6 @@ void setCommandSchema()
 
   JsonObject index = properties.createNestedObject("index");
   index["type"] = "integer";
-  index["required"] = true;
   index["minimum"] = 1;
   index["maximum"] = getMaxIndex();
 
@@ -274,11 +275,14 @@ void setCommandSchema()
 
   JsonObject command = properties.createNestedObject("command");
   command["type"] = "string";
-  command["required"] = true;
   JsonArray commandEnum = command.createNestedArray("enum");
   commandEnum.add("query");
   commandEnum.add("on");
   commandEnum.add("off");
+
+  JsonArray required = items.createNestedArray("required");
+  required.add("index");
+  required.add("command");
 
   // Pass our config schema down to the Rack32 library
   rack32.setCommandSchema(json.as<JsonVariant>());
