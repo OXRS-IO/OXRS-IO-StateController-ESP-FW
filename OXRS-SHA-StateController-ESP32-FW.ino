@@ -139,8 +139,9 @@ void setConfigSchema()
 
   JsonObject outputsPerMcp = json.createNestedObject("outputsPerMcp");
   outputsPerMcp["type"] = "integer";
-  outputsPerMcp["minimum"] = 1;
+  outputsPerMcp["minimum"] = 8;
   outputsPerMcp["maximum"] = MCP_PIN_COUNT;
+  outputsPerMcp["multipleOf"] = 8;
 
   JsonObject outputs = json.createNestedObject("outputs");
   outputs["type"] = "array";
