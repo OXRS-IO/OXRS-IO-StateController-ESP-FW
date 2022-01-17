@@ -56,7 +56,9 @@ const uint8_t MCP_COUNT             = sizeof(MCP_I2C_ADDRESS);
 uint8_t g_mcps_found = 0;
 
 // How many pins on each MCP are we controlling (defaults to all 16)
-// Set via "outputsPerMcp" integer config option
+// Set via "outputsPerMcp" integer config option - should be set via
+// the REST API so it is persisted to SPIFFS and loaded early enough
+// in the boot sequence to configure the LCD and adoption payloads
 uint8_t g_mcp_output_pins = MCP_PIN_COUNT;
 
 /*--------------------------- Instantiate Global Objects -----------------*/
@@ -94,7 +96,14 @@ void setup()
   rack32.begin(jsonConfig, jsonCommand);
 
   // Set up port display
-  rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
+  if (g_mcp_output_pins == 8)
+  {
+    rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO_8);
+  }
+  else
+  {
+    rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
+  }
 
   // Set up config/command schemas (for self-discovery and adoption)
   setConfigSchema();
