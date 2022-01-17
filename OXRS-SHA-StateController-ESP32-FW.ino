@@ -29,7 +29,7 @@
 #define FW_NAME       "OXRS-SHA-StateController-ESP32-FW"
 #define FW_SHORT_NAME "State Controller"
 #define FW_MAKER      "SuperHouse Automation"
-#define FW_VERSION    "3.3.3"
+#define FW_VERSION    "3.4.0"
 
 /*--------------------------- Libraries ----------------------------------*/
 #include <Adafruit_MCP23X17.h>        // For MCP23017 I/O buffers
@@ -54,6 +54,12 @@ const uint8_t MCP_COUNT             = sizeof(MCP_I2C_ADDRESS);
 /*--------------------------- Global Variables ---------------------------*/
 // Each bit corresponds to an MCP found on the IC2 bus
 uint8_t g_mcps_found = 0;
+
+// How many pins on each MCP are we controlling (defaults to all 16)
+// Set via "outputsPerMcp" integer config option - should be set via
+// the REST API so it is persisted to SPIFFS and loaded early enough
+// in the boot sequence to configure the LCD and adoption payloads
+uint8_t g_mcp_output_pins = MCP_PIN_COUNT;
 
 /*--------------------------- Instantiate Global Objects -----------------*/
 // Rack32 handler
@@ -90,7 +96,14 @@ void setup()
   rack32.begin(jsonConfig, jsonCommand);
 
   // Set up port display
-  rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
+  if (g_mcp_output_pins == 8)
+  {
+    rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO_8);
+  }
+  else
+  {
+    rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
+  }
 
   // Set up config/command schemas (for self-discovery and adoption)
   setConfigSchema();
@@ -133,6 +146,12 @@ void setConfigSchema()
   // Define our config schema
   StaticJsonDocument<1024> json;
 
+  JsonObject outputsPerMcp = json.createNestedObject("outputsPerMcp");
+  outputsPerMcp["type"] = "integer";
+  outputsPerMcp["minimum"] = 8;
+  outputsPerMcp["maximum"] = MCP_PIN_COUNT;
+  outputsPerMcp["multipleOf"] = 8;
+
   JsonObject outputs = json.createNestedObject("outputs");
   outputs["type"] = "array";
   
@@ -170,6 +189,11 @@ void setConfigSchema()
 
 void jsonConfig(JsonVariant json)
 {
+  if (json.containsKey("outputsPerMcp"))
+  {
+    g_mcp_output_pins = json["outputsPerMcp"].as<uint8_t>();
+  }
+  
   if (json.containsKey("outputs"))
   {
     for (JsonVariant output : json["outputs"].as<JsonArray>())
@@ -185,8 +209,8 @@ void jsonOutputConfig(JsonVariant json)
   if (index == 0) return;
 
   // Work out the MCP and pin we are configuring
-  uint8_t mcp = (index - 1) / MCP_PIN_COUNT;
-  uint8_t pin = (index - 1) % MCP_PIN_COUNT;
+  uint8_t mcp = (index - 1) / g_mcp_output_pins;
+  uint8_t pin = (index - 1) % g_mcp_output_pins;
 
   if (json.containsKey("type"))
   {
@@ -231,8 +255,8 @@ void jsonOutputConfig(JsonVariant json)
     {
       uint8_t interlock_index = json["interlockIndex"].as<uint8_t>();
      
-      uint8_t interlock_mcp = (interlock_index - 1) / MCP_PIN_COUNT;
-      uint8_t interlock_pin = (interlock_index - 1) % MCP_PIN_COUNT;
+      uint8_t interlock_mcp = (interlock_index - 1) / g_mcp_output_pins;
+      uint8_t interlock_pin = (interlock_index - 1) % g_mcp_output_pins;
   
       if (interlock_mcp == mcp)
       {
@@ -305,8 +329,8 @@ void jsonOutputCommand(JsonVariant json)
   if (index == 0) return;
 
   // Work out the MCP and pin we are processing
-  uint8_t mcp = (index - 1) / MCP_PIN_COUNT;
-  uint8_t pin = (index - 1) % MCP_PIN_COUNT;
+  uint8_t mcp = (index - 1) / g_mcp_output_pins;
+  uint8_t pin = (index - 1) % g_mcp_output_pins;
 
   // Get the output type for this pin
   uint8_t type = oxrsOutput[mcp].getType(pin);
@@ -359,7 +383,7 @@ uint8_t getMaxIndex()
   }
 
   // Remember our indexes are 1-based
-  return mcpCount * MCP_PIN_COUNT;  
+  return mcpCount * g_mcp_output_pins;  
 }
 
 uint8_t getIndex(JsonVariant json)
@@ -445,7 +469,7 @@ void outputEvent(uint8_t id, uint8_t output, uint8_t type, uint8_t state)
   // Determine the index (1-based)
   uint8_t mcp = id;
   uint8_t pin = output;
-  uint8_t raw_index = (MCP_PIN_COUNT * mcp) + pin;
+  uint8_t raw_index = (g_mcp_output_pins * mcp) + pin;
   uint8_t index = raw_index + 1;
   
   // Update the MCP pin - i.e. turn the relay on/off (LOW/HIGH)
