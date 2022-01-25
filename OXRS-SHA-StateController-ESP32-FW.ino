@@ -29,7 +29,7 @@
 #define FW_NAME       "OXRS-SHA-StateController-ESP32-FW"
 #define FW_SHORT_NAME "State Controller"
 #define FW_MAKER      "SuperHouse Automation"
-#define FW_VERSION    "3.7.0"
+#define FW_VERSION    "3.7.1"
 
 /*--------------------------- Libraries ----------------------------------*/
 #include <Adafruit_MCP23X17.h>        // For MCP23017 I/O buffers
@@ -50,6 +50,9 @@ const uint8_t MCP_COUNT             = sizeof(MCP_I2C_ADDRESS);
 
 // Speed up the I2C bus to get faster event handling
 #define       I2C_CLOCK_SPEED       400000L
+
+// Internal constants used when output type parsing fails
+#define       INVALID_OUTPUT_TYPE   99
 
 /*--------------------------- Global Variables ---------------------------*/
 // Each bit corresponds to an MCP found on the IC2 bus
@@ -152,6 +155,9 @@ void setConfigSchema()
   outputsPerMcp["maximum"] = MCP_PIN_COUNT;
   outputsPerMcp["multipleOf"] = 8;
 
+  JsonObject defaultOutputType = json.createNestedObject("defaultOutputType");
+  createOutputTypeEnum(defaultOutputType);
+
   JsonObject outputs = json.createNestedObject("outputs");
   outputs["type"] = "array";
   
@@ -166,10 +172,7 @@ void setConfigSchema()
   index["maximum"] = getMaxIndex();
 
   JsonObject type = properties.createNestedObject("type");
-  JsonArray typeEnum = type.createNestedArray("enum");
-  typeEnum.add("relay");
-  typeEnum.add("motor");
-  typeEnum.add("timer");
+  createOutputTypeEnum(type);
 
   JsonObject timerSeconds = properties.createNestedObject("timerSeconds");
   timerSeconds["type"] = "integer";
@@ -194,6 +197,16 @@ void jsonConfig(JsonVariant json)
     g_mcp_output_pins = json["outputsPerMcp"].as<uint8_t>();
   }
   
+  if (json.containsKey("defaultOutputType"))
+  {
+    uint8_t outputType = parseOutputType(json["defaultOutputType"]);
+
+    if (outputType != INVALID_OUTPUT_TYPE)
+    {
+      setDefaultOutputType(outputType);
+    }
+  }
+
   if (json.containsKey("outputs"))
   {
     for (JsonVariant output : json["outputs"].as<JsonArray>())
@@ -214,21 +227,11 @@ void jsonOutputConfig(JsonVariant json)
 
   if (json.containsKey("type"))
   {
-    if (strcmp(json["type"], "motor") == 0)
+    uint8_t outputType = parseOutputType(json["type"]);    
+
+    if (outputType != INVALID_OUTPUT_TYPE)
     {
-      oxrsOutput[mcp].setType(pin, MOTOR);
-    }
-    else if (strcmp(json["type"], "relay") == 0)
-    {
-      oxrsOutput[mcp].setType(pin, RELAY);
-    }
-    else if (strcmp(json["type"], "timer") == 0)
-    {
-      oxrsOutput[mcp].setType(pin, TIMER);
-    }
-    else 
-    {
-      Serial.println(F("[scon] invalid output type"));
+      oxrsOutput[mcp].setType(pin, outputType);
     }
   }
   
@@ -292,10 +295,7 @@ void setCommandSchema()
   index["maximum"] = getMaxIndex();
 
   JsonObject type = properties.createNestedObject("type");
-  JsonArray typeEnum = type.createNestedArray("enum");
-  typeEnum.add("relay");
-  typeEnum.add("motor");
-  typeEnum.add("timer");
+  createOutputTypeEnum(type);
 
   JsonObject command = properties.createNestedObject("command");
   command["type"] = "string";
@@ -337,9 +337,7 @@ void jsonOutputCommand(JsonVariant json)
   
   if (json.containsKey("type"))
   {
-    if ((strcmp(json["type"], "relay") == 0 && type != RELAY) ||
-        (strcmp(json["type"], "motor") == 0 && type != MOTOR) ||
-        (strcmp(json["type"], "timer") == 0 && type != TIMER))
+    if (parseOutputType(json["type"]) != type)
     {
       Serial.println(F("[scon] command type doesn't match configured type"));
       return;
@@ -369,6 +367,40 @@ void jsonOutputCommand(JsonVariant json)
       {
         Serial.println(F("[scon] invalid command"));
       }
+    }
+  }
+}
+
+void createOutputTypeEnum(JsonObject parent)
+{
+  JsonArray typeEnum = parent.createNestedArray("enum");
+
+  typeEnum.add("relay");
+  typeEnum.add("motor");
+  typeEnum.add("timer");  
+}
+
+uint8_t parseOutputType(const char * outputType)
+{
+  if (strcmp(outputType, "relay") == 0) { return RELAY; }
+  if (strcmp(outputType, "motor") == 0) { return MOTOR; }
+  if (strcmp(outputType, "timer") == 0) { return TIMER; }
+
+  Serial.println(F("[scon] invalid output type"));
+  return INVALID_OUTPUT_TYPE;
+}
+
+void setDefaultOutputType(uint8_t outputType)
+{
+  // Set all pins on all MCPs to this default output type
+  for (uint8_t mcp = 0; mcp < MCP_COUNT; mcp++)
+  {
+    if (bitRead(g_mcps_found, mcp) == 0)
+      continue;
+
+    for (uint8_t pin = 0; pin < g_mcp_output_pins; pin++)
+    {
+      oxrsOutput[mcp].setType(pin, outputType);
     }
   }
 }
