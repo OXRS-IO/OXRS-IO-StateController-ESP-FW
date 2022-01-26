@@ -539,7 +539,7 @@ void scanI2CBus()
       }
 
       // Initialise output handlers
-      oxrsOutput[mcp].begin(outputEvent);
+      oxrsOutput[mcp].begin(outputEvent, RELAY);
       
       Serial.println(F("MCP23017"));
     }
