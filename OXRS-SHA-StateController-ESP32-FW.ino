@@ -150,15 +150,21 @@ void setConfigSchema()
   StaticJsonDocument<1024> json;
 
   JsonObject outputsPerMcp = json.createNestedObject("outputsPerMcp");
+  outputsPerMcp["title"] = "Number Of Outputs Per MCP";
+  outputsPerMcp["description"] = "Number of outputs connected to each MCP23017 I/O chip, which is dependent on the relay driver used (must be either 8 or 16, defaults to 16).";
   outputsPerMcp["type"] = "integer";
   outputsPerMcp["minimum"] = 8;
   outputsPerMcp["maximum"] = MCP_PIN_COUNT;
   outputsPerMcp["multipleOf"] = 8;
 
   JsonObject defaultOutputType = json.createNestedObject("defaultOutputType");
+  defaultOutputType["title"] = "Default Output Type";
+  defaultOutputType["description"] = "Set the default output type for anything without explicit configuration below. Defaults to ‘relay’.";
   createOutputTypeEnum(defaultOutputType);
 
   JsonObject outputs = json.createNestedObject("outputs");
+  outputs["title"] = "Output Configuration";
+  outputs["description"] = "Add configuration for each output in use on your device. The 1-based index specifies which output you wish to configure. The type defines how an output is controlled. For ‘timer’ outputs you can define how long it should stay ON (defaults to 60 seconds). Interlocking two outputs ensures they are never both on at the same time (useful for controlling motors).";
   outputs["type"] = "array";
   
   JsonObject items = outputs.createNestedObject("items");
@@ -167,18 +173,22 @@ void setConfigSchema()
   JsonObject properties = items.createNestedObject("properties");
 
   JsonObject index = properties.createNestedObject("index");
+  index["title"] = "Index";
   index["type"] = "integer";
   index["minimum"] = 1;
   index["maximum"] = getMaxIndex();
 
   JsonObject type = properties.createNestedObject("type");
+  type["title"] = "Type";
   createOutputTypeEnum(type);
 
   JsonObject timerSeconds = properties.createNestedObject("timerSeconds");
+  timerSeconds["title"] = "Timer (seconds)";
   timerSeconds["type"] = "integer";
   timerSeconds["minimum"] = 1;
 
   JsonObject interlockIndex = properties.createNestedObject("interlockIndex");
+  interlockIndex["title"] = "Interlock With";
   interlockIndex["type"] = "integer";
   interlockIndex["minimum"] = 1;
   interlockIndex["maximum"] = getMaxIndex();
@@ -282,6 +292,8 @@ void setCommandSchema()
   StaticJsonDocument<1024> json;
 
   JsonObject outputs = json.createNestedObject("outputs");
+  outputs["title"] = "Output Commands";
+  outputs["description"] = "Send commands to one or more outputs on your device. The 1-based index specifies which output you wish to command. The type is used to validate the configuration for this output matches the command. Supported commands are ‘on’ or ‘off’ to change the output state, or ‘query’ to publish the current state to MQTT.";
   outputs["type"] = "array";
   
   JsonObject items = outputs.createNestedObject("items");
@@ -290,14 +302,17 @@ void setCommandSchema()
   JsonObject properties = items.createNestedObject("properties");
 
   JsonObject index = properties.createNestedObject("index");
+  index["title"] = "Index";
   index["type"] = "integer";
   index["minimum"] = 1;
   index["maximum"] = getMaxIndex();
 
   JsonObject type = properties.createNestedObject("type");
+  type["title"] = "Type";
   createOutputTypeEnum(type);
 
   JsonObject command = properties.createNestedObject("command");
+  command["title"] = "Command";
   command["type"] = "string";
   JsonArray commandEnum = command.createNestedArray("enum");
   commandEnum.add("query");
