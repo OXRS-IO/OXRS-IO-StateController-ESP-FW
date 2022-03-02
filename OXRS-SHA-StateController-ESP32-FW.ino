@@ -188,7 +188,7 @@ void setConfigSchema()
   timerSeconds["minimum"] = 1;
 
   JsonObject interlockIndex = properties.createNestedObject("interlockIndex");
-  interlockIndex["title"] = "Interlock With";
+  interlockIndex["title"] = "Interlock With Index";
   interlockIndex["type"] = "integer";
   interlockIndex["minimum"] = 1;
   interlockIndex["maximum"] = getMaxIndex();
