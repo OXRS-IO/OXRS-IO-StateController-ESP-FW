@@ -101,11 +101,11 @@ void setup()
   // Set up port display
   if (g_mcp_output_pins == 8)
   {
-    rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO_8);
+    rack32.setDisplayPortLayout(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO_8);
   }
   else
   {
-    rack32.setDisplayPorts(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
+    rack32.setDisplayPortLayout(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
   }
 
   // Set up config/command schemas (for self-discovery and adoption)
