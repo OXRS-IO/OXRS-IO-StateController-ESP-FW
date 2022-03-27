@@ -7,9 +7,9 @@
     ESP32
 
   External dependencies. Install using the Arduino library manager:
-    "Adafruit_MCP23017"
-    "OXRS-SHA-Rack32-ESP32-LIB" by SuperHouse Automation Pty
-    "OXRS-SHA-IOHandler-ESP32-LIB" by SuperHouse Automation Pty
+    [Adafruit_MCP23X17](https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library)
+    [OXRS-SHA-Rack32-ESP32-LIB](https://github.com/SuperHouse/OXRS-SHA-Rack32-ESP32-LIB)
+    [OXRS-SHA-IOHandler-ESP32-LIB](https://github.com/SuperHouse/OXRS-SHA-IOHandler-ESP32-LIB)
 
   Compatible with the multi-channel relay driver hardware found here:
     https://www.superhouse.tv/product/8-channel-relay-driver-shield/
@@ -29,7 +29,7 @@
 #define FW_NAME       "OXRS-SHA-StateController-ESP32-FW"
 #define FW_SHORT_NAME "State Controller"
 #define FW_MAKER      "SuperHouse Automation"
-#define FW_VERSION    "3.8.0"
+#define FW_VERSION    "3.9.0"
 
 /*--------------------------- Libraries ----------------------------------*/
 #include <Adafruit_MCP23X17.h>        // For MCP23017 I/O buffers
@@ -80,9 +80,11 @@ OXRS_Output oxrsOutput[MCP_COUNT];
 */
 void setup()
 {
-  // Startup logging to serial
+  // Start serial and let settle
   Serial.begin(SERIAL_BAUD_RATE);
-  Serial.println();
+  delay(1000);
+
+  // Dump firmware details to serial
   Serial.println(F("========================================"));
   Serial.print  (F("FIRMWARE: ")); Serial.println(FW_NAME);
   Serial.print  (F("MAKER:    ")); Serial.println(FW_MAKER);
@@ -277,7 +279,7 @@ void jsonOutputConfig(JsonVariant json)
       }
       else
       {
-        Serial.println(F("[scon] lock must be with pin on same mcp"));
+        rack32.println(F("[scon] lock must be with pin on same mcp"));
       }
     }
   }
@@ -354,7 +356,7 @@ void jsonOutputCommand(JsonVariant json)
   {
     if (parseOutputType(json["type"]) != type)
     {
-      Serial.println(F("[scon] command type doesn't match configured type"));
+      rack32.println(F("[scon] command type doesn't match configured type"));
       return;
     }
   }
@@ -380,7 +382,7 @@ void jsonOutputCommand(JsonVariant json)
       }
       else 
       {
-        Serial.println(F("[scon] invalid command"));
+        rack32.println(F("[scon] invalid command"));
       }
     }
   }
@@ -401,7 +403,7 @@ uint8_t parseOutputType(const char * outputType)
   if (strcmp(outputType, "motor") == 0) { return MOTOR; }
   if (strcmp(outputType, "timer") == 0) { return TIMER; }
 
-  Serial.println(F("[scon] invalid output type"));
+  rack32.println(F("[scon] invalid output type"));
   return INVALID_OUTPUT_TYPE;
 }
 
@@ -437,7 +439,7 @@ uint8_t getIndex(JsonVariant json)
 {
   if (!json.containsKey("index"))
   {
-    Serial.println(F("[scon] missing index"));
+    rack32.println(F("[scon] missing index"));
     return 0;
   }
   
@@ -446,7 +448,7 @@ uint8_t getIndex(JsonVariant json)
   // Check the index is valid for this device
   if (index <= 0 || index > getMaxIndex())
   {
-    Serial.println(F("[scon] invalid index"));
+    rack32.println(F("[scon] invalid index"));
     return 0;
   }
 
@@ -467,9 +469,9 @@ void publishEvent(uint8_t index, uint8_t type, uint8_t state)
   
   if (!rack32.publishStatus(json.as<JsonVariant>()))
   {
-    Serial.print(F("[scon] [failover] "));
-    serializeJson(json, Serial);
-    Serial.println();
+    rack32.print(F("[scon] [failover] "));
+    serializeJson(json, rack32);
+    rack32.println();
 
     // TODO: add failover handling code here
   }
@@ -531,13 +533,13 @@ void outputEvent(uint8_t id, uint8_t output, uint8_t type, uint8_t state)
  */
 void scanI2CBus()
 {
-  Serial.println(F("[scon] scanning for I/O buffers..."));
+  rack32.println(F("[scon] scanning for I/O buffers..."));
 
   for (uint8_t mcp = 0; mcp < MCP_COUNT; mcp++)
   {
-    Serial.print(F(" - 0x"));
-    Serial.print(MCP_I2C_ADDRESS[mcp], HEX);
-    Serial.print(F("..."));
+    rack32.print(F(" - 0x"));
+    rack32.print(MCP_I2C_ADDRESS[mcp], HEX);
+    rack32.print(F("..."));
 
     // Check if there is anything responding on this address
     Wire.beginTransmission(MCP_I2C_ADDRESS[mcp]);
@@ -556,11 +558,11 @@ void scanI2CBus()
       // Initialise output handlers
       oxrsOutput[mcp].begin(outputEvent, RELAY);
       
-      Serial.println(F("MCP23017"));
+      rack32.println(F("MCP23017"));
     }
     else
     {
-      Serial.println(F("empty"));
+      rack32.println(F("empty"));
     }
   }
 }
