@@ -1,5 +1,5 @@
 /**
-  ESP32 state controller firmware for the Open eXtensible Rack System
+  ESP state controller firmware for the Open eXtensible Rack System
 
   Documentation:  
     https://oxrs.io/docs/firmware/state-controller-esp32.html
@@ -10,9 +10,7 @@
     https://bmdesigns.com.au/shop/relay128-128-channel-relay-driver/
 
   GitHub repository:
-    https://github.com/SuperHouse/OXRS-SHA-StateController-ESP32-FW
-
-  Copyright 2019-2021 SuperHouse Automation Pty Ltd
+    https://github.com/OXRS-IO/OXRS-IO-StateController-ESP-FW
 */
 
 /*--------------------------- Libraries -------------------------------*/
