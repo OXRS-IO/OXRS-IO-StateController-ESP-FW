@@ -503,11 +503,11 @@ void setup()
   // Set up port display
   if (g_mcp_output_pins == 8)
   {
-    rack32.setDisplayPortLayout(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO_8);
+    rack32.getLCD()->drawPorts(PORT_LAYOUT_OUTPUT_AUTO_8, g_mcps_found);
   }
   else
   {
-    rack32.setDisplayPortLayout(g_mcps_found, PORT_LAYOUT_OUTPUT_AUTO);
+    rack32.getLCD()->drawPorts(PORT_LAYOUT_OUTPUT_AUTO, g_mcps_found);
   }
 
   // Set up config/command schemas (for self-discovery and adoption)
@@ -536,7 +536,7 @@ void loop()
     uint16_t io_value = mcp23017[mcp].readGPIOAB();
 
     // Show port animations
-    rack32.updateDisplayPorts(mcp, io_value);
+    rack32.getLCD()->process(mcp, io_value);
   }
 
   // Let Rack32 hardware handle any events etc
